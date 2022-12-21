@@ -1,37 +1,57 @@
 import pg from 'pg'
 import { PoolConfig } from 'pg'
-import { IConnectionOptions } from '../interfaces/connection.js'
+import { IConnectionSettings, ModelsDefinition } from '../interfaces/connection.js'
+import { IPlainObject } from '../interfaces/model.js'
 
 export class Connection {
-  host?: string
-  port?: number
-  database?: string
-  user?: string
-  password?: string | any
+  private connectOptions: PoolConfig = {}
+  public nativePool: pg.Pool
+  public models: IPlainObject = {}
 
-  pool: pg.Pool
+  constructor(options: IConnectionSettings) {
+    this.connectOptions.host = options.host
+    this.connectOptions.port = options.port
+    this.connectOptions.database = options.database
+    this.connectOptions.user = options.user
+    this.connectOptions.password = options.password
 
-  constructor(options: PoolConfig | IConnectionOptions) {
-    this.host = options.host
-    this.port = options.port
-    this.database = options.database
-    this.user = options.user
-    this.password = options.password
-
-    this.pool = new pg.Pool({
-      host: this.host,
-      port: this.port,
-      database: this.database,
-      user: this.user,
-      password: this.password,
-    })
+    this.nativePool = this.getPool()
+    this.models = this.serializeModels(options.models)
   }
 
-  async query(query: string, raw = false) {
+  private getPool() {
+    return new pg.Pool(this.connectOptions)
+  }
+
+  private serializeModels(models: ModelsDefinition): object {
+    if (!models) return {}
+
+    if (typeof models === 'string') return this.getModelsFromDirectory(models)
+    if (Array.isArray(models)) return this.getModelsWithConnection(models)
+
+    return {}
+  }
+
+  private getModelsFromDirectory(models: string) {
+    return {}
+  }
+
+  private getModelsWithConnection(models: Array<any>) {
+    const modelsWithConnection: any = {}
+
+    for (const model of models) {
+      model.connectionPool = this.nativePool
+      modelsWithConnection[model.name] = model
+    }
+
+    return modelsWithConnection
+  }
+
+  async query(query: string, raw = false): Promise<any> {
     if (raw) {
-      return (await this.pool.query(query)).rows
+      return (await this.nativePool.query(query)).rows
     } else {
-      return await this.pool.query(query)
+      return await this.nativePool.query(query)
     }
   }
 }

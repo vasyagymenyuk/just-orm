@@ -1,8 +1,23 @@
-import { runServer } from './modules/run_server.js'
-import { IServerOptions } from './interfaces/server.js'
+import * as dotenv from 'dotenv'
+dotenv.config()
+import { Connection } from './core/Connection.js'
+import { User, Book } from './use.js'
 
-const serverOptions: IServerOptions = { port: 7005 }
+export const connection = new Connection({
+  host: process.env.DB_HOST || 'localhost',
+  port: +(<string>process.env.DB_PORT) || 5432,
+  database: process.env.DB_DATABASE || 'database',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  models: [User, Book],
+})
 
-const message = serverOptions.host
+const models = connection.models
 
-runServer(serverOptions)
+models.User.selectAll().then((res: any) => {
+  console.log(res)
+})
+
+models.Book.selectAll().then((res: any) => {
+  console.log(res)
+})

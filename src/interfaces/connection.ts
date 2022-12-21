@@ -1,5 +1,7 @@
 import { PoolConfig } from 'pg'
 
-export interface IConnectionOptions extends PoolConfig {
-  modelsDir?: string
+export type ModelsDefinition = Array<any> | string | undefined
+
+export interface IConnectionSettings extends PoolConfig {
+  models?: ModelsDefinition
 }
